@@ -9,7 +9,11 @@ dotenv.config()
 const app = express()
 const port = process.env.APP_PORT || 5000
 
-app.use(cors())
+app.use(cors({
+    origin: '*', // Specific origin
+    methods: 'GET,POST,PUT,DELETE', // Allowed methods
+    credentials: true // Allow credentials (cookies, authentication)
+  }))
 app.use(express.json())
 app.get('/', (req, res) => {
     res.send('Hello World!')
