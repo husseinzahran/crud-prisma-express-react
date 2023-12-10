@@ -14,15 +14,28 @@ const prisma = new PrismaClient()
 //     }
 // }
 
+// lib/init-middleware.js
+export default function initMiddleware(middleware) {
+    return (req, res) =>
+      new Promise((resolve, reject) => {
+        middleware(req, res, (result) => {
+          if (result instanceof Error) {
+            return reject(result);
+          }
+          return resolve(result);
+        });
+      });
+  }
+  
 
 // // Initialize the cors middleware
-// const cors = initMiddleware(
-//   Cors({
-//     // Options here: For example, allowing all origins:
-//     origin: '*',
-//     methods: ['GET', 'POST', 'OPTIONS'],
-//   })
-// );
+const cors = initMiddleware(
+  Cors({
+    // Options here: For example, allowing all origins:
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+  })
+);
 
 
 export const getProfitAnalysis = async (req, res) =>  {
