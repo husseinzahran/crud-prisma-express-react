@@ -197,6 +197,7 @@ model DailyProfit {
     commission           Float
     shop_money_sum       Float
     hushy_revenue        Float
+    order_count          Int
 
     @@map("daily_profit")
 }
