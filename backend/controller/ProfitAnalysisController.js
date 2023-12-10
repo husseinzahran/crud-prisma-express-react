@@ -39,7 +39,7 @@ const cors = initMiddleware(
 
 
 export const getProfitAnalysis = async (req, res) =>  {
-  await cors(req, res);
+  //await cors(req, res);
 
   if (req.method === 'GET') {
     let { start_date, end_date } = req.query;
