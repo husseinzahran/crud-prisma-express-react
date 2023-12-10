@@ -1,18 +1,202 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model product {
-  id Int @id @default(autoincrement())
-  name String
-  price Int
+model Account {
+  id                String  @id
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  User              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model ApiKey {
+  id         String    @id
+  name       String
+  teamId     String
+  hashedKey  String    @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  Team       Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model Invitation {
+  id        String   @id
+  teamId    String
+  email     String
+  role      Role     @default(MEMBER)
+  token     String   @unique
+  expires   DateTime
+  invitedBy String
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  User      User     @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
+  Team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, email])
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  email     String
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  expiresAt DateTime
+}
+
+model Session {
+  id           String   @id
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Team {
+  id          String       @id
+  name        String
+  slug        String       @unique
+  domain      String?      @unique
+  defaultRole Role         @default(MEMBER)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now())
+  ApiKey      ApiKey[]
+  Invitation  Invitation[]
+  TeamMember  TeamMember[]
+}
+
+model TeamMember {
+  id        String   @id
+  teamId    String
+  userId    String
+  role      Role     @default(MEMBER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  Team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([userId])
+}
+
+model User {
+  id                     String       @id
+  name                   String
+  email                  String       @unique
+  emailVerified          DateTime?
+  password               String?
+  image                  String?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @default(now())
+  invalid_login_attempts Int          @default(0)
+  lockedAt               DateTime?
+  Account                Account[]
+  Invitation             Invitation[]
+  Session                Session[]
+  TeamMember             TeamMember[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model marketing_cost {
+  id            Int       @id @default(autoincrement())
+  campaign_id   BigInt?
+  amount_spent  Decimal?  @db.Decimal(10, 2)
+  campaign_date DateTime? @db.Date
+  campaign_name String?   @db.VarChar(255)
+  roas          Decimal?  @db.Decimal(10, 2)
+  cpm           Decimal?  @db.Decimal(10, 2)
+  cpp           Decimal?  @db.Decimal(10, 2)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by the Prisma Client.
+model operation_cost {
+  ops_cost Decimal? @db.Decimal
+
+  @@ignore
+}
+
+model orders {
+  id                          BigInt    @id
+  data                        Json
+  created_at                  DateTime? @default(dbgenerated("jsonb_to_timestamp((data -> 'created_at'::text))")) @db.Timestamp(6)
+  total_unit_cost_amount      Decimal?  @default(dbgenerated("sum_unit_costs_prod(data)")) @db.Decimal
+  commission                  Decimal?  @db.Decimal
+  total_discounts             Decimal?  @default(dbgenerated("((data ->> 'total_discounts'::text))::numeric")) @db.Decimal
+  shop_money_amount           Decimal?  @default(dbgenerated("((((data -> 'total_line_items_price_set'::text) -> 'shop_money'::text) ->> 'amount'::text))::numeric")) @db.Decimal
+  total_amount_for_hushy_wear Decimal?  @db.Decimal
+  order_name                  String?   @default(dbgenerated("(data ->> 'name'::text)"))
+  customer_phone              String?   @default(dbgenerated("clean_and_extract_phone(data)"))
+  order_status                String?   @db.VarChar(255)
+  isexchange                  Boolean?  @default(false)
+  total_price                 Decimal?  @default(dbgenerated("((data ->> 'total_price'::text))::numeric")) @db.Decimal(10, 2)
+}
+
+model qp_orders_full {
+  id                Int      @id(map: "qp_orders_pkey_f") @default(autoincrement())
+  phone             String?  @db.VarChar(20)
+  address           String?
+  cod               Boolean?
+  collected         Boolean?
+  returned          Boolean?
+  notes             String?
+  weight            Decimal? @db.Decimal(10, 2)
+  city              String?  @db.VarChar(100)
+  status            String?  @db.VarChar(100)
+  full_name         String?  @map("full name") @db.VarChar(250)
+  total_amount      Float?   @map("total amount") @db.Real
+  total_fees        Float?   @map("total fees") @db.Real
+  order_date        String?  @map("order date") @db.VarChar(500)
+  shipment_contents String?  @map("shipment contents") @db.VarChar(500)
+  status_note       String?  @map("status note") @db.VarChar(500)
+  serial            Int?
+}
+
+model vendors {
+  id          Int      @id @default(autoincrement())
+  vendor_name String?
+  commission  Decimal? @db.Decimal
+  status      String?
+}
+
+enum Role {
+  ADMIN
+  OWNER
+  MEMBER
+}
+
+model DailyProfit {
+    id                  Int     @id
+    order_date_formatted DateTime     @db.Date
+    marketing_spent      Float
+    profit               Float // This is a calculated field in the view
+    commission           Float
+    shop_money_sum       Float
+    hushy_revenue        Float
+
+    @@map("daily_profit")
 }
