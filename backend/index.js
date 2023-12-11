@@ -3,6 +3,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import ProductRoute from './routes/ProductRoute.js'
 import ProfitAnalysisRoute from './routes/ProfitAnalysisRoute.js'
+import csvRoutes from './routes/csvRoutes.js';
 
 dotenv.config()
 
@@ -20,6 +21,8 @@ app.get('/', (req, res) => {
 })
 app.use(ProductRoute)
 app.use(ProfitAnalysisRoute)
+app.use(csvRoutes);
+
 
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`)

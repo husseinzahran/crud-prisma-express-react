@@ -160,9 +160,9 @@ model qp_orders_full {
   id                Int      @id(map: "qp_orders_pkey_f") @default(autoincrement())
   phone             String?  @db.VarChar(20)
   address           String?
-  cod               Boolean?
-  collected         Boolean?
-  returned          Boolean?
+  cod               Decimal? @db.Decimal(10, 2)
+  collected         DateTime? @db.Date
+  returned          DateTime? @db.Date
   notes             String?
   weight            Decimal? @db.Decimal(10, 2)
   city              String?  @db.VarChar(100)
@@ -198,6 +198,8 @@ model DailyProfit {
     shop_money_sum       Float
     hushy_revenue        Float
     order_count          Int
+    cancelled_count          Int
+    revenue_cancelled          Float
 
     @@map("daily_profit")
 }
